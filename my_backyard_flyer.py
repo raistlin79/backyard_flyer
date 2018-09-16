@@ -107,6 +107,13 @@ class BackyardFlyer(Drone):
         print("Waypoints set to: " + str(self.all_waypoints))
         return self.all_waypoints
 
+    def calculate_box(self):
+        print("Setting Home")
+        cp = np.array([self.local_position[0], self.local_position[1], -self.local_position[2]])
+        # get the current local position -> note we need to change the sign of the down # coordinate to be altitude
+        self.all_waypoints = [cp + [10.0, 0.0, 3.0], cp + [10.0, 10.0, 3.0], cp + [0.0, 10.0, 3.0], cp + [0.0, 0.0, 3.0]]
+        return self.all_waypoints
+
     def arming_transition(self):
         """
         1. Take control of the drone
