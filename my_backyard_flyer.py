@@ -72,26 +72,30 @@ class BackyardFlyer(Drone):
         """
         This triggers when `MsgID.LOCAL_VELOCITY` is received and self.local_velocity contains new data
         """
-        # from up and down example
-        if self.flight_state == States.LANDING:
-            if ((self.global_position[2] - self.global_home[2] < 0.1) and
-            abs(self.local_position[2]) < 0.01):
-                self.disarming_transition()
+        pass
 
     def state_callback(self):
         """
         This triggers when `MsgID.STATE` is received and self.armed and self.guided contain new data
         """
-        # Other states
         if self.in_mission:
             if self.flight_state == States.MANUAL:
-                self.arming_transition()
+                # now just passively waiting for the pilot to change these attributes
+                # once the pilot changes, need to update our internal state
+                if self.guided:
+                    self.flight_state = States.ARMING
             elif self.flight_state == States.ARMING:
                 if self.armed:
                     self.takeoff_transition()
+            elif self.flight_state == States.LANDING:
+                # check if the pilot has changed the armed and control modes
+                # if so (and the script no longer in control) stop the mission
+                if not self.armed and not self.guided:
+                    self.stop()
+                    self.in_mission = False
             elif self.flight_state == States.DISARMING:
-                if not self.armed:
-                    self.manual_transition()
+                # no longer want the vehicle to handle the disarming and releasing control that will be done by the pilot
+                pass
 
     def calculate_box(self):
         """
@@ -194,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument('--host', type=str, default='127.0.0.1', help="host address, i.e. '127.0.0.1'")
     args = parser.parse_args()
 
-    conn = MavlinkConnection('tcp:{0}:{1}'.format(args.host, args.port), threaded=False, PX4=False)
+    conn = MavlinkConnection('udp:192.168.1.2:14550', PX4=True, threaded=False)
     #conn = WebSocketConnection('ws://{0}:{1}'.format(args.host, args.port))
     drone = BackyardFlyer(conn)
     time.sleep(2)
